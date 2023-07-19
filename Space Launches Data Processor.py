@@ -267,7 +267,10 @@ class Launch:
 
         # Deduce the success of the launch.
 
-        self.Success = ("failure" not in self.Remarks) and ("failed" not in self.Remarks)
+        # The keywords from failure are empirically chosen based on browsing the Remarks column in the data.
+        FAILURE_KEYWORDS = ["failure", "failed", "explosion", "abort", "damaged", "shut down", "exploded"]
+
+        self.Success = not any(x in self.Remarks for x in FAILURE_KEYWORDS)
 
         # For whatever reason the initial launches of Falcon 1 aren't described as failed in the Remarks.
         if "Falcon-1 (dev)" in self.Vehicle:
