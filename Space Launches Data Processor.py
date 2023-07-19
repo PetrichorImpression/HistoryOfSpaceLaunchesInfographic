@@ -322,7 +322,7 @@ arguments.Languages = arguments.Languages.split(",")
 # If no data is present locally, download it.
 
 years = range(YEAR_MINIMUM, YEAR_MAXIMUM + 1)
-launches = []
+launchesList = []
 
 if not OUTPUT_DATA_PATH.is_file():
 
@@ -345,7 +345,7 @@ if not OUTPUT_DATA_PATH.is_file():
             if "x" in date:
                 continue
 
-            launches.append(Launch(date, cells[3].get_text(), cells[4].get_text(), cells[5].get_text()))
+            launchesList.append(Launch(date, cells[3].get_text(), cells[4].get_text(), cells[5].get_text()))
 
         console.print(f"\rDownloaded data for the year {year}.", end = "\r")
 
@@ -358,7 +358,7 @@ if not OUTPUT_DATA_PATH.is_file():
     console.print("[bold]Exporting the data...[/bold]")
 
     with open(OUTPUT_DATA_PATH, mode = "w", encoding = "UTF-8") as file:
-        file.write(launches[0].GetHeaderCSVRow() + "\n" + "\n".join(x.GetCSVRow() for x in launches))
+        file.write(launchesList[0].GetHeaderCSVRow() + "\n" + "\n".join(x.GetCSVRow() for x in launchesList))
 
     console.print(f'The data has been exported to the output file: "{OUTPUT_DATA_PATH}".')
 
@@ -375,9 +375,15 @@ else:
         next(reader)  # Skip the header row.
 
         for row in reader:
-            launches.append(Launch(row[0], row[3], row[1], row[5], useFuzzyDateDecoding = False))
+            launchesList.append(Launch(row[0], row[3], row[1], row[5], useFuzzyDateDecoding = False))
 
-    console.print(f"The data about {len(launches)} launches has been loaded.")
+    console.print(f"The data about {len(launchesList)} launches has been loaded.")
+
+# Group launches by year.
+
+launches = {y: [ln for ln in launchesList if ln.Year == y] for y in years}
+successfulLaunches = {y: [ln for ln in launches[y] if ln.Success] for y in years}
+failedLaunches = {y: [ln for ln in launches[y] if not ln.Success] for y in years}
 
 # Configure "matplotlib".
 
@@ -418,24 +424,20 @@ for language in arguments.Languages:
     # Calculate some repeatedly used parameters.
 
     # The highest number of launches observed in any year.
-    launchCountUpperRange = max([sum(x.Year == year for x in launches) for year in years])
+    launchCountUpperRange = max([len(launches[y]) for y in years])
 
     # Countries sorted by their total number of successful launches.
-    countries = [ (c, sum(ln.Country == c and ln.Success for ln in launches)) for c in COUNTRY_SITES.keys()]
+
+    countries = [ (c, sum(ln.Country == c and ln.Success for ln in launchesList)) for c in COUNTRY_SITES.keys()]
     countries.sort(key = lambda x: x[1], reverse = True)
     countries = [c for c, ln in countries if ln]
-
-    # Launches grouped by years.
-    launchesByYear = {y: [ln for ln in launches if ln.Year == y] for y in years}
-    successfulLaunchesByYear = {y: [ln for ln in launchesByYear[y] if ln.Success] for y in years}
-    failedLaunchesByYear = {y: [ln for ln in launchesByYear[y] if not ln.Success] for y in years}
 
     # Create the "All Successful Orbital Launches" plot.
 
     console.print()
     console.print(f'[bold]\[{CurrentLanguage}] Generating the "All Successful Orbital Launches" plot...[/bold]')
 
-    data = {c: {y: sum(ln.Success and ln.Country == c for ln in launchesByYear[y]) for y in years} for c in countries}
+    data = {c: {y: sum(ln.Success and ln.Country == c for ln in launches[y]) for y in years} for c in countries}
     totalSums = {c: sum(data[c].values()) for c in countries}  # Total number of successful launches for each country.
 
     figure, axes = plt.subplots()
@@ -488,7 +490,7 @@ for language in arguments.Languages:
     console.print()
     console.print(f'[bold]\[{CurrentLanguage}] Generating the "Successes and Failures" plot...[/bold]')
 
-    data = [(len(successfulLaunchesByYear[y]), len(failedLaunchesByYear[y])) for y in years]
+    data = [(len(successfulLaunches[y]), len(failedLaunches[y])) for y in years]
 
     figure, axes = plt.subplots(figsize = PLOT_SIZE_SIDE)
 
@@ -530,8 +532,8 @@ for language in arguments.Languages:
 
         figure, axes = plt.subplots(figsize = PLOT_SIZE_TINY)
         data = [
-            (sum(1 for ln in successfulLaunchesByYear[y] if ln.Country == country),
-             sum(1 for ln in failedLaunchesByYear[y] if ln.Country == country))
+            (sum(1 for ln in successfulLaunches[y] if ln.Country == country),
+             sum(1 for ln in failedLaunches[y] if ln.Country == country))
             for y in years
         ]
 
@@ -570,7 +572,7 @@ for language in arguments.Languages:
     console.print()
     console.print(f'[bold]\[{CurrentLanguage}] Generating the "Selected Rocket Families" plot...[/bold]')
 
-    data = {f: {y: sum(ln.Family == f for ln in successfulLaunchesByYear[y]) for y in years} for f in ROCKET_FAMILIES}
+    data = {f: {y: sum(ln.Family == f for ln in successfulLaunches[y]) for y in years} for f in ROCKET_FAMILIES}
     totalSums = {f: sum(data[f].values()) for f in ROCKET_FAMILIES}  # Total number of successful launches for each family.
 
     figure, axes = plt.subplots(figsize = PLOT_SIZE_EXTRA_LONG)
@@ -608,8 +610,8 @@ for language in arguments.Languages:
 
         figure, axes = plt.subplots(figsize = PLOT_SIZE_TINY)
         data = [
-            (sum(1 for ln in successfulLaunchesByYear[y] if ln.Family == family),
-             sum(1 for ln in failedLaunchesByYear[y] if ln.Family == family))
+            (sum(1 for ln in successfulLaunches[y] if ln.Family == family),
+             sum(1 for ln in failedLaunches[y] if ln.Family == family))
             for y in years
         ]
 
