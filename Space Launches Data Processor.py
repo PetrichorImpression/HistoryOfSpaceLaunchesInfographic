@@ -423,7 +423,7 @@ for language in arguments.Languages:
     # Countries sorted by their total number of successful launches.
     countries = [ (c, sum(ln.Country == c and ln.Success for ln in launches)) for c in COUNTRY_SITES.keys()]
     countries.sort(key = lambda x: x[1], reverse = True)
-    countries = [c for c, _ in countries]
+    countries = [c for c, ln in countries if ln]
 
     # Launches grouped by years.
     launchesByYear = {y: [ln for ln in launches if ln.Year == y] for y in years}
@@ -455,7 +455,7 @@ for language in arguments.Languages:
     axes.xaxis.set_major_locator(MultipleLocator(10))
     axes.set_ylabel(Translated("Launches"))
     axes.set_ylim([0, launchCountUpperRange])
-    axes.legend(ncol = 6)
+    axes.legend(ncol = 5)
 
     LINE_ARGUMENTS = {"color": COLORS["Decoration"], "linestyle": ":", "linewidth": 1.6, "zorder": 0.0}
     LINE_TEXT_ARGUMENTS = {"color": COLORS["Annotation"], "fontsize": 12.0}
