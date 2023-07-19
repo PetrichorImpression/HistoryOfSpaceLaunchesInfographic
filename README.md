@@ -4,8 +4,8 @@
 
 An infographic showing some data about the historical space (orbital) launches. Available in English and in Polish.
 
-![English version](Infographic (en).png)
-![Polish version](Infographic (pl).png)
+![English version](Infographic%20(en).png)
+![Polish version](Infographic%20(pl).png)
 
 ## Copyright
 
